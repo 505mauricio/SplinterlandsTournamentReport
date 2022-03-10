@@ -7,9 +7,10 @@ import json
 import pdf_report
 import aiohttp
 import asyncio
-import time
-
-
+from PdfToImage import transform_to_png
+import re
+import iso8601
+import os
 
 async def swiss(tournament_info,tournament_id):
     num_groups = tournament_info['rounds'][0]['num_swiss_groups']
@@ -133,9 +134,13 @@ def players_report(general_info:pd.DataFrame) -> pd.DataFrame:
 def main():  
     #4958535b4f5b27e57c062cd79034dd61b3954967
     #a758575ae819bf06be4db5319dce46e2a0fb6792
-    general_info= splinterlands_tournament_info.general_info('0dacb0d4614eb7b5c8c817a09f747944d4202d7a',1000)
-    first_page = pdf_report.first_page(general_info,'0dacb0d4614eb7b5c8c817a09f747944d4202d7a')
-    tournament_df = summoner_summary(general_info,'0dacb0d4614eb7b5c8c817a09f747944d4202d7a')
+    if not os.path.exists('pdfs'):
+        os.mkdir('pdfs')
+
+    general_info= splinterlands_tournament_info.general_info('b0acc0c00dcd829b00d59f2738f9298d21d58f18',1000)
+    pdf_title = re.sub(r"\s+", "", general_info['name'], flags=re.UNICODE)+'_'+iso8601.parse_date(general_info['start_date']).strftime('%x').replace('/','_')
+    first_page = pdf_report.first_page(general_info,pdf_title,'b0acc0c00dcd829b00d59f2738f9298d21d58f18')
+    tournament_df = summoner_summary(general_info,'b0acc0c00dcd829b00d59f2738f9298d21d58f18')
     players_report_df = players_report(general_info)
 
     second_page = pdf_report.second_page(first_page,tournament_df)
@@ -145,6 +150,8 @@ def main():
     sixth_to_ninth_page = pdf_report.sixth_to_ninth_page(fifth_page,tournament_df,general_info)
     tenth_page = pdf_report.tenth_page(sixth_to_ninth_page,players_report_df)
     tenth_page.save()
+    transform_to_png('./pdfs',pdf_title+'.pdf')
+
 
 
 if __name__ == "__main__":  
