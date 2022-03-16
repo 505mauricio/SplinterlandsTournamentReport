@@ -1,4 +1,3 @@
-
 import numpy as np  
 import pandas as pd
 import requests
@@ -11,6 +10,7 @@ from PdfToImage import transform_to_png
 import re
 import iso8601
 import os
+
 
 async def swiss(tournament_info,tournament_id):
     num_groups = tournament_info['rounds'][0]['num_swiss_groups']
@@ -50,8 +50,14 @@ async def swiss(tournament_info,tournament_id):
 
                         player1 = battle['player_1']
                         player2 = battle['player_2']
-                        winner = battle['winner']                    
-                        df = df.append({'team1summoner':team1summoner,'team1summoner_color':team1summoner_color,'team2summoner':team2summoner,'team2summoner_color':team2summoner_color,'player1':player1,'player2':player2,'winner':winner,'team1monsters':team1monsters,'team2monsters':team2monsters},ignore_index=True)
+                        winner = battle['winner']                        
+                        if winner == battle['player_1']:
+                            loser = battle['player_2']
+                        elif winner == battle['player_2']:
+                            loser = battle['player_1']
+                        else:
+                            loser = 'DRAW'
+                        df = pd.concat([df,pd.DataFrame([{'team1summoner':team1summoner,'team1summoner_color':team1summoner_color,'team2summoner':team2summoner,'team2summoner_color':team2summoner_color,'player1':player1,'player2':player2,'winner':winner,'loser':loser,'team1monsters':team1monsters,'team2monsters':team2monsters,'phase':h,'group':i}])],ignore_index=True)
 
     team1_slots = pd.DataFrame(df['team1monsters'].to_list(), columns = ['team1_slot1', 'team1_slot2', 'team1_slot3','team1_slot4','team1_slot5','team1_slot6'])
     team2_slots = pd.DataFrame(df['team2monsters'].to_list(), columns = ['team2_slot1', 'team2_slot2', 'team2_slot3','team2_slot4','team2_slot5','team2_slot6'])
@@ -96,7 +102,13 @@ async def single_elimination(tournament_info_response,tournament_id):
                     player1 = battle['player_1']
                     player2 = battle['player_2']
                     winner = battle['winner']
-                    df = df.append({'team1summoner':team1summoner,'team1summoner_color':team1summoner_color,'team2summoner':team2summoner,'team2summoner_color':team2summoner_color,'player1':player1,'player2':player2,'winner':winner,'team1monsters':team1monsters,'team2monsters':team2monsters},ignore_index=True)
+                    if winner == battle['player_1']:
+                        loser = battle['player_2']
+                    elif winner == battle['player_2']:
+                        loser = battle['player_1']
+                    else:
+                        loser = 'DRAW'
+                    df = pd.concat([df,pd.DataFrame([{'team1summoner':team1summoner,'team1summoner_color':team1summoner_color,'team2summoner':team2summoner,'team2summoner_color':team2summoner_color,'player1':player1,'player2':player2,'winner':winner,'loser':loser,'team1monsters':team1monsters,'team2monsters':team2monsters }])],ignore_index=True)
 
     team1_slots = pd.DataFrame(df['team1monsters'].to_list(), columns = ['team1_slot1', 'team1_slot2', 'team1_slot3','team1_slot4','team1_slot5','team1_slot6'])
     team2_slots = pd.DataFrame(df['team2monsters'].to_list(), columns = ['team2_slot1', 'team2_slot2', 'team2_slot3','team2_slot4','team2_slot5','team2_slot6'])
@@ -137,10 +149,10 @@ def main():
     if not os.path.exists('pdfs'):
         os.mkdir('pdfs')
 
-    general_info= splinterlands_tournament_info.general_info('b0acc0c00dcd829b00d59f2738f9298d21d58f18',1000)
+    general_info= splinterlands_tournament_info.general_info('d32e979f023aadaa79169c568772a643978a2f45',1000)
     pdf_title = re.sub(r"\s+", "", general_info['name'], flags=re.UNICODE)+'_'+iso8601.parse_date(general_info['start_date']).strftime('%x').replace('/','_')
-    first_page = pdf_report.first_page(general_info,pdf_title,'b0acc0c00dcd829b00d59f2738f9298d21d58f18')
-    tournament_df = summoner_summary(general_info,'b0acc0c00dcd829b00d59f2738f9298d21d58f18')
+    first_page = pdf_report.first_page(general_info,pdf_title,'d32e979f023aadaa79169c568772a643978a2f45')
+    tournament_df = summoner_summary(general_info,'d32e979f023aadaa79169c568772a643978a2f45')
     players_report_df = players_report(general_info)
 
     second_page = pdf_report.second_page(first_page,tournament_df)

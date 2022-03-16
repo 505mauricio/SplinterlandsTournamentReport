@@ -17,12 +17,13 @@ import iso8601
 import matplotlib.pyplot as plt
 import pandas as pd
 import seaborn as sns
-import re
 
+
+league_dict= {0:'Novice',1:'Bronze',2:'Bronze',3:'Bronze',4:'Silver',5:'Silver',6:'Silver',7:'Gold',8:'Gold',9:'Gold',10:'Diamond',11:'Diamond',12:'Diamond',13:'Champion',14:'Champion',15:'Champion'}
 
 def pie_plot(data,background_color=(0,0,0),title=None,exp = True,colors = None,labels = None,figsize = (20,20),dpi = 150,fontsize = 40,shadow = True,startangle = 90, pctdistance= .5, labeldistance= 1.1,left = .125):  
     plt.rcdefaults()
-    plt.rcParams['font.family'] = 'Franklin Gothic Medium'
+    #plt.rcParams['font.family'] = 'Franklin Gothic Medium'
     plt.rcParams["figure.figsize"] = figsize
     plt.rcParams["figure.dpi"] = dpi
 
@@ -46,14 +47,14 @@ def pie_plot(data,background_color=(0,0,0),title=None,exp = True,colors = None,l
 
 def matchup_chart(data:pd.DataFrame,figsize=(50,50),dpi=80):
     plt.rcdefaults()
-    plt.rcParams['font.family'] = 'Franklin Gothic Medium'
+    #plt.rcParams['font.family'] = 'Franklin Gothic Medium'
     plt.rcParams["figure.figsize"] = figsize
     plt.rcParams["figure.dpi"] = dpi
     fig, ax = plt.subplots()
     fig.subplots_adjust(left = 0.3, top = 0.9, bottom=0.3,right = 0.9)
     #plt.figure(figsize = figsize)
     #plt.figure(figsize = (162/25.4,162/25.4))
-    summoners_list = data['team1summoner'].append(data['team2summoner']).value_counts()[:5].index.tolist()
+    summoners_list = pd.concat([data['team1summoner'],data['team2summoner']]).value_counts()[:5].index.tolist()
     summoners_wr = []
     summoners_score = []
     for i in summoners_list:
@@ -70,8 +71,10 @@ def matchup_chart(data:pd.DataFrame,figsize=(50,50),dpi=80):
     return plt.gcf()
 
 def summoner_win_loss(summoner:str,dataframe:pd.DataFrame) -> pd.Series:
-    a = dataframe[dataframe['winner']==dataframe['player1']]['team1summoner'].append(dataframe[dataframe['winner']!=dataframe['player1']]['team2summoner'],ignore_index=True)
-    b = dataframe[dataframe['winner']==dataframe['player1']]['team2summoner'].append(dataframe[dataframe['winner']!=dataframe['player1']]['team1summoner'],ignore_index=True)
+    a = pd.concat([dataframe[dataframe['winner']==dataframe['player1']]['team1summoner'],dataframe[dataframe['winner']!=dataframe['player1']]['team2summoner']],ignore_index=True)
+    b = pd.concat([dataframe[dataframe['winner']==dataframe['player1']]['team2summoner'],dataframe[dataframe['winner']!=dataframe['player1']]['team1summoner']],ignore_index=True)
+    #a = dataframe[dataframe['winner']==dataframe['player1']]['team1summoner'].append(dataframe[dataframe['winner']!=dataframe['player1']]['team2summoner'],ignore_index=True)
+    #b = dataframe[dataframe['winner']==dataframe['player1']]['team2summoner'].append(dataframe[dataframe['winner']!=dataframe['player1']]['team1summoner'],ignore_index=True)
     matchup = pd.DataFrame([a,b]).transpose()
     win = matchup[matchup[0]==summoner][1].value_counts().rename('win')
     loss = matchup[matchup[1]==summoner][0].value_counts().rename('loss')
@@ -85,7 +88,7 @@ def summoner_win_loss(summoner:str,dataframe:pd.DataFrame) -> pd.Series:
 
 def horizontal_bar_plot(Summoners:dict,figsize=(50,50),dpi=80):
     plt.rcdefaults()
-    plt.rcParams['font.family'] = 'Franklin Gothic Medium'
+    #plt.rcParams['font.family'] = 'Franklin Gothic Medium'
     plt.rcParams["figure.figsize"] = figsize
     plt.rcParams["figure.dpi"] = dpi
     Summoners = dict(sorted(Summoners.items(), key=lambda item: item[1],reverse=True))
@@ -151,7 +154,7 @@ def allowed_editions(editions :List[int]) ->List[str]:
             get_image(chaos_icon, width=7*mm)]
     return allowed_editions
 
-def first_page(general_info,tournament_id):
+def first_page(general_info,pdf_title,tournament_id):
     
     load_dotenv(os.getcwd())
     resp = requests.get(general_info['sponsor_logo_url'],stream=True)
@@ -167,10 +170,10 @@ def first_page(general_info,tournament_id):
     no_legendary_icon = os.environ.get('NO_LEGENDARY_ICON')
     no_legendary_summoners = os.environ.get('NO_LEGENDARY_SUMMONERS')
     
-    league_dict = {0:novice_icon,1:bronze_icon,2:silver_icon,3:gold_icon,4:diamond_icon}
+    league_dict_icons = {0:novice_icon,1:bronze_icon,2:silver_icon,3:gold_icon,4:diamond_icon}
     legendary_rulings_dict = {"no_legendaries":no_legendary_icon,'all':legendary_icon,"no_legendary_summoners":no_legendary_summoners} 
 
-    imgDoc = canvas.Canvas(re.sub(r"\s+", "", general_info['name'], flags=re.UNICODE)+'_'+iso8601.parse_date(general_info['start_date']).strftime('%x').replace('/','_')+'.pdf',pagesize=landscape(A4))    
+    imgDoc = canvas.Canvas('./pdfs/'+pdf_title+'.pdf',pagesize=landscape(A4))    
     imgDoc.setFillColorRGB(218/255,241/255,248/255)
     imgDoc.rect(0,0,95*mm,100*mm,fill=1,stroke=0)
     imgDoc.rect(105*mm,0,192*mm,100*mm,fill=1,stroke=0)
@@ -198,7 +201,7 @@ def first_page(general_info,tournament_id):
     league_frame = Frame(133*mm,5*mm,16*mm,90*mm,showBoundary=0)
     league_frame.addFromList([ ##League Cap and Legendary Allowed
     Spacer(2*mm,15*mm),
-    get_image(league_dict[general_info['data']['rating_level']], width=15*mm),Spacer(2*mm, 2*mm),
+    get_image(league_dict_icons[general_info['data']['rating_level']], width=15*mm),Spacer(2*mm, 2*mm),
     get_image(legendary_rulings_dict[general_info['data']['allowed_cards']['type']], width=15*mm)]
     , imgDoc)
     
@@ -213,10 +216,26 @@ def first_page(general_info,tournament_id):
     entrants_frame.addFromList([entrants_frame_story_inframe],imgDoc)
 
 
+    if general_info['data']['alternate_fee']['value'] == 'none':
+        alternative_fee_text = "&nbsp Alternative Fee : None"
+    elif league_dict[general_info['data']['alternate_fee']['min_league']] != league_dict[general_info['data']['alternate_fee']['max_league']]:
+        alternative_fee_text = f"&nbsp Alternative Fee: {general_info['data']['alternate_fee']['value']} for  {league_dict[general_info['data']['alternate_fee']['min_league']]} to {league_dict[general_info['data']['alternate_fee']['max_league']]}"
+    else:
+        alternative_fee_text = f"&nbsp Alternative Fee: {general_info['data']['alternate_fee']['value']} for  {league_dict[general_info['data']['alternate_fee']['min_league']]}"
+
+    if general_info['data']['spsp_min']:
+        min_sps_text = f"&nbsp Minimum SPS stacked: {general_info['data']['spsp_min']}"
+    else:
+        min_sps_text = f'&nbsp Minimum SPS stacked: 0'
+
     tournament_fee_frame = Frame(103.5*mm,105*mm,95*mm,24*mm,showBoundary=0)
     tournament_fee_frame_story = [Paragraph("&nbsp Entry Fee:" + general_info['entry_fee'],styles['Normal']),
+    Paragraph(alternative_fee_text,   styles['Normal']),
+    Paragraph(f"&nbsp Minimum Power: {general_info['data']['cp_min']}",   styles['Normal']),
+    Paragraph(min_sps_text,   styles['Normal']),    
     Paragraph('&nbsp Tournament Start Date:' + iso8601.parse_date(general_info['start_date']).strftime('%X %x %Z'),   styles['Normal']),
-    Paragraph('&nbsp Prize in USD:' + str(general_info['total_prizes_usd']),   styles['Normal'])
+    Paragraph('&nbsp Prize in USD:' + str(general_info['total_prizes_usd']),   styles['Normal']),
+    Paragraph(f"&nbsp Tournament Format: {general_info['format'].replace('_', ' ')}",   styles['Normal']),
     ]
     tournament_fee_frame_story_inframe = KeepInFrame(A4[0], A4[1], tournament_fee_frame_story)
     entrants_frame.addFromList([tournament_fee_frame_story_inframe],imgDoc)
@@ -232,8 +251,8 @@ def second_page(doc,tournament_df):
     doc.rect(0*mm,125*mm,150*mm,85*mm,fill=1,stroke=0)
 
 
-    summoner_distribution = tournament_df['team1summoner'].append(tournament_df['team2summoner']).value_counts().to_dict()
-    color_distribution = tournament_df['team1summoner_color'].append(tournament_df['team2summoner_color']).value_counts().to_dict()
+    summoner_distribution = pd.concat([tournament_df['team1summoner'],tournament_df['team2summoner']]).value_counts().to_dict()
+    color_distribution = pd.concat([tournament_df['team1summoner_color'],tournament_df['team2summoner_color']]).value_counts().to_dict()
     picked_color = sorted(color_distribution.items(), key=lambda item: item[1],reverse=True)[0][0]
 
     element_dict = {'Blue':'Water','White':'Life','Gold':'Dragon','Black':'Death','Green':'Earth','Red':'Fire'}
@@ -409,7 +428,6 @@ def sixth_to_ninth_page(doc,tournament_df,general_info):
         player_join_date = datetime.datetime.strptime(player_d['join_date'],"%Y-%m-%dT%H:%M:%S.%fZ").date().strftime('%m/%d/%Y')
         player_rating = player_d['rating']
         player_power = player_d['collection_power']
-        league_dict= {0:'Novice',1:'Bronze',2:'Bronze',3:'Bronze',4:'Silver',5:'Silver',6:'Silver',7:'Gold',8:'Gold',9:'Gold',10:'Diamond',11:'Diamond',12:'Diamond',13:'Champion',14:'Champion',15:'Champion'}
         league = league_dict[player_d['league']]
 
         player_frame = Frame(10*mm,140*mm,99*2*mm-10*mm,50*mm,showBoundary=0)
@@ -418,13 +436,15 @@ def sixth_to_ninth_page(doc,tournament_df,general_info):
         Paragraph('Player since: ' + player_join_date, styles['Normal']),    
         Paragraph('Player Power:' + str(player_power), styles['Normal']),
         Paragraph('Player Rating:' + str(player_rating), styles['Normal']),
-        Paragraph('Current League: ' + league,   styles['Normal'])
+        Paragraph('Current League: ' + league,   styles['Normal']),
+        Paragraph(f"Won Against: {','.join(tournament_df[tournament_df['winner'] == general_info['players'][i]['player']]['loser'].to_list())}" ,styles['Normal']),
+        Paragraph(f"Lost to: {','.join(tournament_df[tournament_df['loser'] == general_info['players'][i]['player']]['winner'].to_list())}" ,styles['Normal'])
         ]
         player_frame_story_inframe = KeepInFrame(A4[0], A4[1], player_frame_story)
         player_frame.addFromList([player_frame_story_inframe],doc)
 
 
-        player_summoners = tournament_df.loc[(tournament_df['player1']==general_info["players"][i]['player'])]['team1summoner'].append(tournament_df.loc[(tournament_df['player2']==general_info["players"][i]['player'])]['team2summoner']).value_counts()
+        player_summoners = pd.concat([tournament_df.loc[(tournament_df['player1']==general_info["players"][i]['player'])]['team1summoner'],tournament_df.loc[(tournament_df['player2']==general_info["players"][i]['player'])]['team2summoner']]).value_counts()
         player_summoners_graph = horizontal_bar_plot(player_summoners,((99)/25.4,105/25.4),250)
         doc.drawImage(plot_to_img(player_summoners_graph), 45.5*mm,10*mm,99*mm, 105*mm,mask='auto')
 
@@ -457,19 +477,20 @@ def tenth_page(doc,players_report):
     doc.rect(237*mm,0,60*mm,170*mm,fill=1,stroke=0)
     doc.rect(0*mm,172*mm,297*mm,38*mm,fill=1,stroke=0)
 
-    plt.rcParams["figure.figsize"] = (235/25.4,170/25.4)
+    plt.rcParams["figure.figsize"] = (235/25.4,170*(1+len(players_report['power_league'].unique())//4)/2/25.4)
     plt.rcParams["figure.dpi"] = 250
+    
     plot = sns.relplot(data=players_report.rename(columns={'power_league': 'Power League','league':'League'}), x="collection_power",
      y=players_report["wins"]*100/(players_report['wins']+players_report['losses']), hue="League",col='Power League',col_wrap=3,facet_kws=dict(sharex=False)).set_axis_labels("Power", "Winrate %")
-    doc.drawImage(plot_to_img(plot), 0*mm,0*mm,235*mm, 170*mm,mask='auto')
+    doc.drawImage(plot_to_img(plot), 0*mm,0*mm,235*mm, 170*(1+len(players_report['power_league'].unique())//4)/2*mm,mask='auto')
 
     power_league_pie = pie_plot(players_report['power_league'].value_counts(),background_color=(218/255,241/255,248/255),labels = players_report['power_league'].value_counts().index,
-    figsize=(55/25.4,55/25.4),fontsize = 7,shadow = False,pctdistance=.6, labeldistance=1.02,startangle= 45,left = 0,title= '  Players by Power League')
-    doc.drawImage(plot_to_img(power_league_pie), 237*mm,90*mm,60*mm, 60*mm,mask='auto')
+    figsize=(54/25.4,54/25.4),fontsize = 7,shadow = False,pctdistance=.6, labeldistance=1.02,startangle= 45,left = 0.1,title= 'Players by Power League')
+    doc.drawImage(plot_to_img(power_league_pie), 240*mm,90*mm,54*mm, 54*mm,mask='auto')
 
     power_league_pie = pie_plot(players_report['league'].value_counts(),background_color=(218/255,241/255,248/255),labels = players_report['league'].value_counts().index,
-    figsize=(55/25.4,55/25.4),fontsize = 7,shadow = False,pctdistance=.6, labeldistance=1.02,startangle= 45,left = 0,title= '  Players by League')
-    doc.drawImage(plot_to_img(power_league_pie), 237*mm,15*mm,60*mm, 60*mm,mask='auto')
+    figsize=(54/25.4,54/25.4),fontsize = 7,shadow = False,pctdistance=.6, labeldistance=1.02,startangle= 45,left = 0.1,title= 'Players by League')
+    doc.drawImage(plot_to_img(power_league_pie), 240*mm,15*mm,54*mm, 54*mm,mask='auto')
 
 
     Page_title_frame= Frame(10*mm,188*mm, 2/3*297*mm , 20*mm, showBoundary=0)

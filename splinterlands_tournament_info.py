@@ -27,6 +27,6 @@ def sort_summoner(card_id):
                 189:"Wizard of Eastwood",439:"Obsidian",27:"Lyanna Natura",72:"Xander Foxwood",259:"Mylor Crowling",112:"Prince Rennyn",278:"Scarred Llama Mage",
                 441:"General Sloan",156:"Mother Khala",261:"Lorna Shine",38:"Tyrus Paladium",73:"Kiara Lightbringer",239:"Chanseus the Great",113:"The Peakrider",
                 438:"Thaddius Brood",145:"Contessa L'ament",258:"Owster Rotwell",49:"Zintar Mortalis",74:"Jarlax the Undead",235:"Mimosa Nightshade",109:"Crypt Mancer",
-                224:"Drake of Arnak",240:"Kretch Tallevor",114:"Delwyn Dragonscale",262:"Brighton Bloom",78:"Neb Seni",88:"Daria Dragonscale",442:"Quix the Devious",200:"Camila Sungazer",56:"Selenia Sky",291:"Byzantine Kitty",205:"Prince Julian",130:"Archmage Arius"}
+                224:"Drake of Arnak",240:"Kretch Tallevor",114:"Delwyn Dragonscale",262:"Brighton Bloom",78:"Neb Seni",88:"Daria Dragonscale",442:"Quix the Devious",200:"Camila Sungazer",56:"Selenia Sky",291:"Byzantine Kitty",205:"Prince Julian",130:"Archmage Arius",449:'Waka Spiritblade'}
     return card_dict[card_id]
 
