@@ -45,7 +45,7 @@ def pie_plot(data,background_color=(0,0,0),title=None,exp = True,colors = None,l
     #plt.show()
     return plt.gcf()
 
-def matchup_chart(data:pd.DataFrame,figsize=(50,50),dpi=80):
+def matchup_chart(data:pd.DataFrame,axis_list:List[str],dataframe_filterA:str,dataframe_filterB:str,cmap=sns.diverging_palette(0, 230, 90, 60, as_cmap=True),figsize=(50,50),dpi=80,annot_size = 10):
     plt.rcdefaults()
     #plt.rcParams['font.family'] = 'Franklin Gothic Medium'
     plt.rcParams["figure.figsize"] = figsize
@@ -54,37 +54,34 @@ def matchup_chart(data:pd.DataFrame,figsize=(50,50),dpi=80):
     fig.subplots_adjust(left = 0.3, top = 0.9, bottom=0.3,right = 0.9)
     #plt.figure(figsize = figsize)
     #plt.figure(figsize = (162/25.4,162/25.4))
-    summoners_list = pd.concat([data['team1summoner'],data['team2summoner']]).value_counts()[:5].index.tolist()
-    summoners_wr = []
-    summoners_score = []
-    for i in summoners_list:
-       loss_perc,score,win,loss =summoner_win_loss(i,data)
-       summoners_wr.append(loss_perc)
-       summoners_score.append(score)
-    chart_wr= pd.concat(summoners_wr,axis=1).fillna(0)
-    chart_txt = pd.concat(summoners_score,axis=1).fillna('0-0')
-    cmap = sns.diverging_palette(0, 230, 90, 60, as_cmap=True)
-    chart = sns.heatmap(chart_wr,annot=chart_txt,cmap = cmap,fmt = '',xticklabels = True, yticklabels = True, linewidths=.5, linecolor='black')
+    #axis_list = pd.concat([data['team1summoner'],data['team2summoner']]).value_counts()[:5].index.tolist()
+    wr = []
+    scores = []
+    for i in axis_list:
+       loss_perc,score,win,loss =win_loss_map(i,dataframe_filterA,dataframe_filterB,data)
+       wr.append(loss_perc)
+       scores.append(score)
+    chart_wr= pd.concat(wr,axis=1).fillna(.5)
+    chart_txt = pd.concat(scores,axis=1).fillna('0-0')
+    chart = sns.heatmap(chart_wr,annot=chart_txt,cmap = cmap,fmt = '',xticklabels = True, yticklabels = True, linewidths=.5, linecolor='black',annot_kws={"size": annot_size})
+    sns.set(font_scale=8)
     
     
     #plt.subplot_tool()
     return plt.gcf()
 
-def summoner_win_loss(summoner:str,dataframe:pd.DataFrame) -> pd.Series:
-    a = pd.concat([dataframe[dataframe['winner']==dataframe['player1']]['team1summoner'],dataframe[dataframe['winner']!=dataframe['player1']]['team2summoner']],ignore_index=True)
-    b = pd.concat([dataframe[dataframe['winner']==dataframe['player1']]['team2summoner'],dataframe[dataframe['winner']!=dataframe['player1']]['team1summoner']],ignore_index=True)
-    #a = dataframe[dataframe['winner']==dataframe['player1']]['team1summoner'].append(dataframe[dataframe['winner']!=dataframe['player1']]['team2summoner'],ignore_index=True)
-    #b = dataframe[dataframe['winner']==dataframe['player1']]['team2summoner'].append(dataframe[dataframe['winner']!=dataframe['player1']]['team1summoner'],ignore_index=True)
+def win_loss_map(target:str,dataframe_filterA:str,dataframe_filter_B:str,dataframe:pd.DataFrame) -> pd.Series:
+    a = pd.concat([dataframe[dataframe['winner']==dataframe['player1']][dataframe_filterA],dataframe[dataframe['winner']!=dataframe['player1']][dataframe_filter_B]],ignore_index=True)
+    b = pd.concat([dataframe[dataframe['winner']==dataframe['player1']][dataframe_filter_B],dataframe[dataframe['winner']!=dataframe['player1']][dataframe_filterA]],ignore_index=True)
     matchup = pd.DataFrame([a,b]).transpose()
-    win = matchup[matchup[0]==summoner][1].value_counts().rename('win')
-    loss = matchup[matchup[1]==summoner][0].value_counts().rename('loss')
+    win = matchup[matchup[0]==target][1].value_counts().rename('win')
+    loss = matchup[matchup[1]==target][0].value_counts().rename('loss')
     loss_win_df = pd.DataFrame([loss,win]).transpose().fillna(0).astype('int32')
     loss_win_df['loss_perc'] = loss_win_df['loss']/(loss_win_df['win']+loss_win_df['loss'])
     loss_win_df['win'] = loss_win_df['win'].astype(str)
     loss_win_df['loss'] =  loss_win_df['loss'].astype(str)
     resp = loss_win_df['loss']+'-'+loss_win_df['win']  
-    #return resp.rename(summoner),win_loss_df['win'].rename(summoner),win_loss_df['loss'].rename(summoner)
-    return loss_win_df['loss_perc'].rename(summoner),resp.rename(summoner),loss_win_df['win'].rename(summoner),loss_win_df['loss'].rename(summoner)
+    return loss_win_df['loss_perc'].rename(target),resp.rename(target),loss_win_df['win'].rename(target),loss_win_df['loss'].rename(target)
 
 def horizontal_bar_plot(Summoners:dict,figsize=(50,50),dpi=80):
     plt.rcdefaults()
@@ -313,7 +310,9 @@ def third_page(doc,tournament_df):
     #doc.setFillColorRGB(0.95,0.95,0.95)
     doc.setFillColorRGB(0.85,0.99,0.80)
     doc.rect(15*mm,0,115*mm,210*mm,fill=1,stroke=0)
-    m_chart = matchup_chart(tournament_df,(161/25.4,161*1.15/25.4),250)
+    player_list = pd.concat([tournament_df['team1summoner'],tournament_df['team2summoner']]).value_counts()[:5].index.tolist()
+    cmap = sns.diverging_palette(0, 230, 90, 60, as_cmap=True)
+    m_chart = matchup_chart(tournament_df,player_list,"teamsummoner","team2summoner",cmap,(161/25.4,161*1.15/25.4),250)
     doc.drawImage(plot_to_img(m_chart), 133*mm,8*mm,161*mm, 180*mm,mask='auto')
 
     Page_title_frame= Frame(16*mm,100*mm, 113*mm , 20*mm, showBoundary=0)

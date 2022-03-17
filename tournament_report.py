@@ -6,7 +6,7 @@ import json
 import pdf_report
 import aiohttp
 import asyncio
-from PdfToImage import transform_to_png
+from pdf_to_png import transform_to_png
 import re
 import iso8601
 import os
@@ -149,10 +149,10 @@ def main():
     if not os.path.exists('pdfs'):
         os.mkdir('pdfs')
 
-    general_info= splinterlands_tournament_info.general_info('d32e979f023aadaa79169c568772a643978a2f45',1000)
+    general_info= splinterlands_tournament_info.general_info('a5488043cd12e7b9a9156f467692a09a6ee38464',1000)
     pdf_title = re.sub(r"\s+", "", general_info['name'], flags=re.UNICODE)+'_'+iso8601.parse_date(general_info['start_date']).strftime('%x').replace('/','_')
-    first_page = pdf_report.first_page(general_info,pdf_title,'d32e979f023aadaa79169c568772a643978a2f45')
-    tournament_df = summoner_summary(general_info,'d32e979f023aadaa79169c568772a643978a2f45')
+    first_page = pdf_report.first_page(general_info,pdf_title,'a5488043cd12e7b9a9156f467692a09a6ee38464')
+    tournament_df = summoner_summary(general_info,'a5488043cd12e7b9a9156f467692a09a6ee38464')
     players_report_df = players_report(general_info)
 
     second_page = pdf_report.second_page(first_page,tournament_df)
